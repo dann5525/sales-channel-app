@@ -11,6 +11,7 @@ import JoinSalesChannelScreen from './screens/JoinSalesChannelScreen';
 import MainScreen from './screens/MainScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';  // Ensure this import is correct
+import ManageInventoryScreen from './screens/ManageInventoryScreen';
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -36,6 +37,7 @@ export default function App() {
         <Drawer.Screen name="Main" component={MainStack} />
         <Drawer.Screen name="Analytics" component={AnalyticsScreen} />
         <Drawer.Screen name="Settings" component={SettingsScreen} />
+        <Drawer.Screen name="Inventory" component={ManageInventoryScreen} />
       </Drawer.Navigator>
     </NavigationContainer>
   );

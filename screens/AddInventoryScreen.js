@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, FlatList, StyleSheet } from 'react-native';
+import { View, TextInput, TouchableOpacity, FlatList, Text, StyleSheet, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { dag4 } from '@stardust-collective/dag4';
 import dataTransactionService from '../services/DataTransactionService';
 
 export default function AddInventoryScreen({ navigation }) {
   const [inventory, setInventory] = useState([]);
+  const [responseMessage, setResponseMessage] = useState('');
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -26,7 +27,7 @@ export default function AddInventoryScreen({ navigation }) {
     try {
       const walletPrivateKey = await AsyncStorage.getItem('walletPrivateKey');
       const salesChannel = await AsyncStorage.getItem('salesChannel');
-      const { id: channelId } = JSON.parse(salesChannel); // Extract channelId
+      const { id: channelId } = JSON.parse(salesChannel);
 
       if (!walletPrivateKey || !channelId) {
         throw new Error('Missing required data (walletPrivateKey or channelId).');
@@ -37,44 +38,49 @@ export default function AddInventoryScreen({ navigation }) {
 
       const storedInventory = inventory.map(item => ({
         AddInventory: {
-          channelId: channelId, // Use the stored channelId
+          channelId: channelId,
           address: account.address,
           product: item.name,
           amount: parseFloat(item.amount),
-          timestamp: Date.now().toString()
-        }
+          timestamp: Date.now().toString(),
+        },
       }));
 
-      // Push each inventory transaction to the service
       for (let transaction of storedInventory) {
         const transactionObject = {
           message: transaction,
-          globalL0Url: 'http://localhost:9000', // Replace with actual URL
-          metagraphL1DataUrl: 'http://localhost:9400', // Replace with actual URL
+          globalL0Url: 'http://localhost:9000',
+          metagraphL1DataUrl: 'http://localhost:9400',
         };
 
         await dataTransactionService.processTransaction(transactionObject);
       }
 
-      // Store the inventory in AsyncStorage in the correct structure
       await AsyncStorage.setItem('inventory', JSON.stringify(storedInventory));
-
-      // Proceed to the next screen
+      setResponseMessage('Inventory updated successfully!');
       navigation.navigate('AddSeller');
     } catch (error) {
       console.error('Error handling inventory submission:', error.message);
+      setResponseMessage('Failed to update inventory. Please try again.');
     }
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.sectionTitle}>Update Inventory</Text>
       <FlatList
         data={inventory}
         renderItem={({ item, index }) => (
-          <View style={styles.productContainer}>
+          <View key={index} style={styles.productRow}>
             <TextInput
-              style={styles.input}
-              placeholder={`${item.name} Inventory`}
+              style={[styles.input, styles.productInput]}
+              placeholder={`${item.name}`}
+              editable={false}
+              value={item.name}
+            />
+            <TextInput
+              style={[styles.input, styles.amountInput]}
+              placeholder="Inventory Amount"
               keyboardType="numeric"
               value={item.amount}
               onChangeText={(text) => updateInventory(index, text)}
@@ -83,24 +89,63 @@ export default function AddInventoryScreen({ navigation }) {
         )}
         keyExtractor={(item, index) => index.toString()}
       />
-      <Button title="Next" onPress={handleNext} />
-    </View>
+      <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+        <Text style={styles.nextButtonText}>Next</Text>
+      </TouchableOpacity>
+      {responseMessage !== '' && <Text style={styles.responseMessage}>{responseMessage}</Text>}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
+    justifyContent: 'center',
     padding: 20,
+    backgroundColor: '#f8f8f8',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
   },
   input: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: '#ddd',
     borderWidth: 1,
-    marginBottom: 10,
     paddingHorizontal: 10,
+    borderRadius: 5,
+    backgroundColor: '#fff',
   },
-  productContainer: {
-    marginBottom: 10,
+  productRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  productInput: {
+    flex: 2,
+    marginRight: 10,
+  },
+  amountInput: {
+    flex: 1,
+  },
+  nextButton: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  nextButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  responseMessage: {
+    marginTop: 20,
+    fontSize: 16,
+    color: 'red',
+    textAlign: 'center',
   },
 });

@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, FlatList, Text, StyleSheet } from 'react-native';
+import { View, TextInput, TouchableOpacity, FlatList, Text, StyleSheet, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { dag4 } from '@stardust-collective/dag4';
-import dataTransactionService from '../services/DataTransactionService';  // Ensure this is correctly imported
+import dataTransactionService from '../services/DataTransactionService';
 
 export default function AddSellerScreen({ navigation }) {
   const [sellers, setSellers] = useState([]);
-  const [errorMessage, setErrorMessage] = useState(''); // Track error messages
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     const initializeSeller = async () => {
       const walletPrivateKey = await AsyncStorage.getItem('walletPrivateKey');
       const account = dag4.createAccount();
       account.loginPrivateKey(walletPrivateKey);
-
-      // Initialize the first seller as the user's own address
       setSellers([account.address]);
     };
 
@@ -36,9 +34,8 @@ export default function AddSellerScreen({ navigation }) {
   };
 
   const handleFinish = async () => {
-    setErrorMessage(''); // Clear previous errors
+    setErrorMessage('');
 
-    // Filter out empty sellers
     const filteredSellers = sellers.filter(seller => validateAddress(seller));
     setSellers(filteredSellers);
 
@@ -49,10 +46,6 @@ export default function AddSellerScreen({ navigation }) {
       const walletPrivateKey = await AsyncStorage.getItem('walletPrivateKey');
       const salesChannel = await AsyncStorage.getItem('salesChannel');
       const { id: channelId } = JSON.parse(salesChannel);
-
-      if (!walletPrivateKey || !channelId) {
-        throw new Error('Missing required data (walletPrivateKey or channelId).');
-      }
 
       const account = dag4.createAccount();
       account.loginPrivateKey(walletPrivateKey);
@@ -76,40 +69,35 @@ export default function AddSellerScreen({ navigation }) {
           await dataTransactionService.processTransaction(transactionObject);
           goodSellers.push(sellerNew);
         } catch (error) {
-          console.error(`Error processing seller ${sellerNew}:`, error.message);
           badSellers.push(sellerNew);
         }
       }
 
-      // Remove processed (good) sellers from the list
       setSellers(badSellers);
 
       if (badSellers.length > 0) {
-        setErrorMessage(
-          `The following addresses had issues: ${badSellers.join(', ')}. Please check and correct them.`
-        );
+        setErrorMessage(`The following addresses had issues: ${badSellers.join(', ')}. Please check and correct them.`);
       } else {
-        // If all sellers are processed successfully, move to the next screen
         await AsyncStorage.setItem('sellers', JSON.stringify(goodSellers));
         await AsyncStorage.setItem('isOnboarded', 'true');
         navigation.navigate('MainScreen');
       }
     } catch (error) {
-      console.error('Error handling seller submission:', error.message);
       setErrorMessage('An error occurred while processing the sellers. Please try again.');
     }
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.sectionTitle}>Add Sellers</Text>
       <FlatList
         data={sellers}
         renderItem={({ item, index }) => (
-          <View style={styles.productContainer}>
+          <View key={index} style={styles.productRow}>
             <TextInput
               style={[
                 styles.input,
-                errorMessage && sellers.includes(item) && styles.invalidInput, // Highlight invalid inputs
+                errorMessage && sellers.includes(item) && styles.invalidInput, 
               ]}
               placeholder="Seller Address"
               value={item}
@@ -119,32 +107,67 @@ export default function AddSellerScreen({ navigation }) {
         )}
         keyExtractor={(item, index) => index.toString()}
       />
-      {errorMessage !== '' && (
-        <Text style={styles.errorMessage}>{errorMessage}</Text>
-      )}
-      <Button title="Add Seller" onPress={addSeller} />
-      <Button title="Finish" onPress={handleFinish} />
-    </View>
+      {errorMessage !== '' && <Text style={styles.errorMessage}>{errorMessage}</Text>}
+      <TouchableOpacity style={styles.addButton} onPress={addSeller}>
+        <Text style={styles.addButtonText}>Add Seller</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.finishButton} onPress={handleFinish}>
+        <Text style={styles.finishButtonText}>Finish</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
+    justifyContent: 'center',
     padding: 20,
+    backgroundColor: '#f8f8f8',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
   },
   input: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: '#ddd',
     borderWidth: 1,
-    marginBottom: 10,
     paddingHorizontal: 10,
+    borderRadius: 5,
+    backgroundColor: '#fff',
   },
-  productContainer: {
-    marginBottom: 10,
+  productRow: {
+    marginBottom: 16,
   },
   invalidInput: {
     borderColor: 'red',
+  },
+  addButton: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  finishButton: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  finishButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   errorMessage: {
     marginTop: 20,

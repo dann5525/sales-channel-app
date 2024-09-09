@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { dag4 } from '@stardust-collective/dag4';
@@ -12,16 +12,12 @@ export default function JoinSalesChannelScreen({ navigation }) {
   useEffect(() => {
     const loadWalletData = async () => {
       try {
-        console.log('Attempting to load wallet data...');
         const privateKey = await AsyncStorage.getItem('walletPrivateKey');
         if (privateKey) {
-          console.log('Wallet private key found. Logging in...');
           dag4.account.loginPrivateKey(privateKey);
           const address = dag4.account.address;
-          console.log('Wallet address:', address);
           setWalletAddress(address);
         } else {
-          console.log('No wallet private key found.');
           setResponseMessage('No wallet data found. Please set up your wallet first.');
         }
       } catch (error) {
@@ -34,18 +30,12 @@ export default function JoinSalesChannelScreen({ navigation }) {
   }, []);
 
   const handleJoinChannel = async () => {
-    console.log('handleJoinChannel triggered');
     if (channelId.trim()) {
       try {
-        console.log('Fetching sales channel data for channel ID:', channelId);
         const response = await axios.get(`http://localhost:9200/data-application/channels/${channelId}`);
         const channelData = response.data;
 
-        console.log('Sales channel data received:', channelData);
-
-        // Check if the user's wallet address is in the sellers list
         if (channelData.sellers && channelData.sellers.includes(walletAddress)) {
-          console.log('Wallet address is a registered seller.');
           const salesChannel = {
             id: channelData.id,
             name: channelData.name,
@@ -57,14 +47,11 @@ export default function JoinSalesChannelScreen({ navigation }) {
           };
 
           await AsyncStorage.setItem('salesChannel', JSON.stringify(salesChannel));
-          console.log('SalesChannel stored in AsyncStorage:', salesChannel);
           await AsyncStorage.setItem('isOnboarded', 'true');
 
           setResponseMessage('Successfully joined the sales channel!');
-          // Navigate to the MainScreen
           navigation.navigate('MainScreen');
         } else {
-          console.log('Wallet address is not a registered seller.');
           setResponseMessage('Your wallet address is not registered as a seller in this sales channel.');
         }
       } catch (error) {
@@ -72,37 +59,35 @@ export default function JoinSalesChannelScreen({ navigation }) {
         setResponseMessage('Failed to join the sales channel. Please try again.');
       }
     } else {
-      console.log('No valid Sales Channel ID entered.');
       setResponseMessage('Please enter a valid Sales Channel ID.');
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Your Wallet Address:</Text>
-      <Text style={styles.walletAddress}>{walletAddress}</Text>
+      <View style={styles.card}>
+        <Text style={styles.label}>Your Wallet Address:</Text>
+        <Text style={styles.walletAddress}>{walletAddress}</Text>
 
-      <Text style={styles.instruction}>
-        Share this address with the sales channel owner. Once the owner has added your address, enter the Sales Channel ID below.
-      </Text>
+        <Text style={styles.instruction}>
+          Share this address with the sales channel owner. Once the owner has added your address, enter the Sales Channel ID below.
+        </Text>
 
-      <Text style={styles.label}>Enter Sales Channel ID:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Sales Channel ID"
-        value={channelId}
-        onChangeText={setChannelId}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Sales Channel ID"
+          value={channelId}
+          onChangeText={setChannelId}
+        />
 
-      <Button
-        title="Join Channel"
-        onPress={handleJoinChannel}
-      />
+        <TouchableOpacity style={styles.button} onPress={handleJoinChannel}>
+          <Text style={styles.buttonText}>Join Channel</Text>
+        </TouchableOpacity>
 
-      {/* Display the response message to the user */}
-      {responseMessage !== '' && (
-        <Text style={styles.responseMessage}>{responseMessage}</Text>
-      )}
+        {responseMessage !== '' && (
+          <Text style={styles.responseMessage}>{responseMessage}</Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -112,10 +97,22 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: 'center',
+    backgroundColor: '#f8f8f8',
+  },
+  card: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
   },
   label: {
     fontSize: 18,
     marginBottom: 8,
+    color: '#333',
   },
   walletAddress: {
     fontSize: 16,
@@ -123,6 +120,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     padding: 10,
     borderRadius: 5,
+    color: '#555',
   },
   instruction: {
     fontSize: 16,
@@ -131,16 +129,29 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: '#ddd',
     borderWidth: 1,
     marginBottom: 16,
     paddingHorizontal: 10,
     borderRadius: 5,
+    backgroundColor: '#fff',
+  },
+  button: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   responseMessage: {
     marginTop: 20,
     fontSize: 16,
-    color: 'red', // You can change this to green for success messages
+    color: 'red',
     textAlign: 'center',
   },
 });

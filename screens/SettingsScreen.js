@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { dag4 } from '@stardust-collective/dag4';
@@ -10,12 +10,12 @@ export default function SettingsScreen({ navigation }) {
   const [channelId, setChannelId] = useState('');
   const [responseMessage, setResponseMessage] = useState('');
   const [mode, setMode] = useState(''); // 'owner' or 'seller'
-  const [channelData, setChannelData] = useState(null); // Store channel data
+  const [channelData, setChannelData] = useState(null); 
   const [newProductName, setNewProductName] = useState('');
   const [newProductPrice, setNewProductPrice] = useState('');
   const [products, setProducts] = useState([]);
   const [sellers, setSellers] = useState([]);
-  const [newSellerAddress, setNewSellerAddress] = useState(''); // State to hold the new seller address
+  const [newSellerAddress, setNewSellerAddress] = useState('');
 
   useEffect(() => {
     const loadWalletData = async () => {
@@ -109,7 +109,7 @@ export default function SettingsScreen({ navigation }) {
             channelId: channelId,
             address: walletAddress,
             products: [
-              [newProduct.name, newProduct.price], // Only the new product
+              [newProduct.name, newProduct.price], 
             ],
           },
         },
@@ -120,7 +120,7 @@ export default function SettingsScreen({ navigation }) {
       await dataTransactionService.processTransaction(transactionObject);
 
       setResponseMessage('Product added successfully.');
-      setNewProductName('');  // Clear product input fields
+      setNewProductName('');  
       setNewProductPrice('');
     } catch (error) {
       console.error('Error adding product:', error.message);
@@ -136,7 +136,6 @@ export default function SettingsScreen({ navigation }) {
         return;
       }
 
-      // Add the new seller to the sellers list
       setSellers([...sellers, sellerToAdd]);
 
       const transactionObject = {
@@ -154,7 +153,7 @@ export default function SettingsScreen({ navigation }) {
       await dataTransactionService.processTransaction(transactionObject);
 
       setResponseMessage('Seller added successfully.');
-      setNewSellerAddress(''); // Clear seller input field
+      setNewSellerAddress(''); 
     } catch (error) {
       console.error('Error adding seller:', error.message);
       setResponseMessage('Failed to add seller. Please try again.');
@@ -162,7 +161,8 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const renderSellerMode = () => (
-    <View>
+    <View style={styles.card}>
+      <Text style={styles.heading}>Seller Settings</Text>
       <Text>Your Wallet Address:</Text>
       <Text style={styles.walletAddress}>{walletAddress}</Text>
 
@@ -177,48 +177,59 @@ export default function SettingsScreen({ navigation }) {
         onChangeText={setChannelId}
       />
 
-      <Button title="Change Channel" onPress={handleChangeChannel} />
+      <TouchableOpacity style={styles.button} onPress={handleChangeChannel}>
+        <Text style={styles.buttonText}>Change Channel</Text>
+      </TouchableOpacity>
     </View>
   );
 
   const renderOwnerMode = () => (
-    <View>
-      <Text>Sales Channel ID:</Text>
-      <Text style={styles.walletAddress}>{channelId}</Text>
+    <ScrollView>
+      <View style={styles.card}>
+        <Text style={styles.heading}>Owner Settings</Text>
+        <Text>Sales Channel ID:</Text>
+        <Text style={styles.walletAddress}>{channelId}</Text>
 
-      <Text>Existing Products:</Text>
-      {products.map((product, index) => (
-        <Text key={index}>{product.name}: ${product.price}</Text>
-      ))}
+        <Text>Existing Products:</Text>
+        {products.map((product, index) => (
+          <Text key={index} style={styles.productText}>{product.name}: ${product.price}</Text>
+        ))}
 
-      <TextInput
-        style={styles.input}
-        placeholder="New Product Name"
-        value={newProductName}
-        onChangeText={setNewProductName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="New Product Price"
-        keyboardType="numeric"
-        value={newProductPrice}
-        onChangeText={setNewProductPrice}
-      />
-      <Button title="Add Product" onPress={handleAddProduct} />
+        <TextInput
+          style={styles.input}
+          placeholder="New Product Name"
+          value={newProductName}
+          onChangeText={setNewProductName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="New Product Price"
+          keyboardType="numeric"
+          value={newProductPrice}
+          onChangeText={setNewProductPrice}
+        />
+        <TouchableOpacity style={styles.button} onPress={handleAddProduct}>
+          <Text style={styles.buttonText}>Add Product</Text>
+        </TouchableOpacity>
+      </View>
 
-      <Text>Current Sellers:</Text>
-      {sellers.map((seller, index) => (
-        <Text key={index}>{seller}</Text>
-      ))}
+      <View style={styles.card}>
+        <Text>Current Sellers:</Text>
+        {sellers.map((seller, index) => (
+          <Text key={index} style={styles.sellerText}>{seller}</Text>
+        ))}
 
-      <TextInput
-        style={styles.input}
-        placeholder="New Seller Address"
-        value={newSellerAddress}
-        onChangeText={setNewSellerAddress}  // Update the state correctly
-      />
-      <Button title="Add Seller" onPress={handleAddSeller} />
-    </View>
+        <TextInput
+          style={styles.input}
+          placeholder="New Seller Address"
+          value={newSellerAddress}
+          onChangeText={setNewSellerAddress}  
+        />
+        <TouchableOpacity style={styles.button} onPress={handleAddSeller}>
+          <Text style={styles.buttonText}>Add Seller</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 
   return (
@@ -236,13 +247,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#fff',
+  },
+  card: {
+    backgroundColor: '#f9f9f9',
+    padding: 15,
+    marginVertical: 10,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#4CAF50',
   },
   input: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: '#ddd',
     borderWidth: 1,
     marginBottom: 10,
     paddingHorizontal: 10,
+    borderRadius: 5,
+    backgroundColor: '#fff',
   },
   walletAddress: {
     fontSize: 16,
@@ -251,9 +282,30 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
   },
+  productText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  sellerText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  button: {
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   label: {
     fontSize: 18,
     marginBottom: 8,
+    color: '#333',
   },
   responseMessage: {
     marginTop: 20,
