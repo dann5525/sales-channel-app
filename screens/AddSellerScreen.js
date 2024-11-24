@@ -62,8 +62,8 @@ export default function AddSellerScreen({ navigation }) {
 
           const transactionObject = {
             message: sellerTransaction,
-            globalL0Url: 'http://localhost:9000',
-            metagraphL1DataUrl: 'http://localhost:9400',
+            globalL0Url: 'https://rested-nice-dove.ngrok-free.app/9000',
+            metagraphL1DataUrl: 'https://rested-nice-dove.ngrok-free.app/9400',
           };
 
           await dataTransactionService.processTransaction(transactionObject);

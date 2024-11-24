@@ -21,7 +21,7 @@ export default function ManageInventoryScreen({ navigation }) {
         const { id: channelId } = JSON.parse(salesChannel);
 
         // Fetch latest sales channel data from the backend
-        const response = await axios.get(`http://localhost:9200/data-application/channels/${channelId}`);
+        const response = await axios.get(`https://rested-nice-dove.ngrok-free.app/9200/data-application/channels/${channelId}`);
         const { products, sellers, owner } = response.data;
 
         // Format products as an array for easy mapping
@@ -57,6 +57,7 @@ export default function ManageInventoryScreen({ navigation }) {
         AddInventory: {
           channelId: channelId,
           address: account.address,
+          station: "one",
           product: selectedProduct,
           amount: parseFloat(amount),
           timestamp: Date.now().toString(),
@@ -65,8 +66,8 @@ export default function ManageInventoryScreen({ navigation }) {
 
       const transactionObject = {
         message: inventoryTransaction,
-        globalL0Url: 'http://localhost:9000',
-        metagraphL1DataUrl: 'http://localhost:9400',
+        globalL0Url: 'https://rested-nice-dove.ngrok-free.app/9000',
+        metagraphL1DataUrl: 'https://rested-nice-dove.ngrok-free.app/9400',
       };
 
       await dataTransactionService.processTransaction(transactionObject);
@@ -77,43 +78,45 @@ export default function ManageInventoryScreen({ navigation }) {
     }
   };
 
-  const handleMoveInventory = async () => {
-    try {
-      const walletPrivateKey = await AsyncStorage.getItem('walletPrivateKey');
-      const salesChannel = await AsyncStorage.getItem('salesChannel');
-      const { id: channelId } = JSON.parse(salesChannel);
+  // const handleMoveInventory = async () => {
+  //   try {
+  //     const walletPrivateKey = await AsyncStorage.getItem('walletPrivateKey');
+  //     const salesChannel = await AsyncStorage.getItem('salesChannel');
+  //     const { id: channelId } = JSON.parse(salesChannel);
 
-      if (!walletPrivateKey || !channelId || !selectedProduct || !amount || !selectedSeller) {
-        throw new Error('Missing required data.');
-      }
+  //     if (!walletPrivateKey || !channelId || !selectedProduct || !amount || !selectedSeller) {
+  //       throw new Error('Missing required data.');
+  //     }
 
-      const account = dag4.createAccount();
-      account.loginPrivateKey(walletPrivateKey);
+  //     const account = dag4.createAccount();
+  //     account.loginPrivateKey(walletPrivateKey);
 
-      const moveInventoryTransaction = {
-        MoveInventory: {
-          channelId: channelId,
-          address: account.address,
-          toAddress: selectedSeller,
-          product: selectedProduct,
-          amount: parseFloat(amount),
-          timestamp: Date.now().toString(),
-        },
-      };
+  //     const moveInventoryTransaction = {
+  //       MoveInventory: {
+  //         channelId: channelId,
+  //         address: account.address,
+  //         toAddress: selectedSeller,
+  //         fromStation: "first station",
+  //         toStation: 'second station',
+  //         product: selectedProduct,
+  //         amount: parseFloat(amount),
+  //         timestamp: Date.now().toString(),
+  //       },
+  //     };
 
-      const transactionObject = {
-        message: moveInventoryTransaction,
-        globalL0Url: 'http://localhost:9000',
-        metagraphL1DataUrl: 'http://localhost:9400',
-      };
+  //     const transactionObject = {
+  //       message: moveInventoryTransaction,
+  //       globalL0Url: 'https://rested-nice-dove.ngrok-free.app/9000',
+  //       metagraphL1DataUrl: 'https://rested-nice-dove.ngrok-free.app/9400',
+  //     };
 
-      await dataTransactionService.processTransaction(transactionObject);
-      setResponseMessage('Inventory moved successfully!');
-    } catch (error) {
-      console.error('Error moving inventory:', error.message);
-      setResponseMessage('Failed to move inventory. Please try again.');
-    }
-  };
+  //     await dataTransactionService.processTransaction(transactionObject);
+  //     setResponseMessage('Inventory moved successfully!');
+  //   } catch (error) {
+  //     console.error('Error moving inventory:', error.message);
+  //     setResponseMessage('Failed to move inventory. Please try again.');
+  //   }
+  // };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -146,7 +149,7 @@ export default function ManageInventoryScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Move Inventory Section */}
+      {/* Move Inventory Section 
       <View>
         <Text style={styles.subSectionTitle}>Move Inventory</Text>
         <View style={styles.row}>
@@ -183,7 +186,8 @@ export default function ManageInventoryScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Response Message */}
+      Response Message */}
+      
       {responseMessage !== '' && <Text style={styles.responseMessage}>{responseMessage}</Text>}
     </ScrollView>
   );

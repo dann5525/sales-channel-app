@@ -29,6 +29,7 @@ export default function SalesChannelCreationScreen({ navigation }) {
         CreateSalesChannel: {
           name: channelName,
           owner: account.address,
+          station: "one",
           products: products.map(product => [product.name, parseFloat(product.price)]),
           startSnapshotOrdinal: 1, // Replace with actual snapshot data
           endSnapshotOrdinal: 10000, // Replace with actual snapshot data
@@ -37,8 +38,8 @@ export default function SalesChannelCreationScreen({ navigation }) {
 
       const transaction = {
         message: salesChannelMessage,
-        globalL0Url: 'http://localhost:9000', // Replace with actual URL
-        metagraphL1DataUrl: 'http://localhost:9400', // Replace with actual URL
+        globalL0Url: 'https://rested-nice-dove.ngrok-free.app/9000', // Replace with actual URL
+        metagraphL1DataUrl: 'https://rested-nice-dove.ngrok-free.app/9400', // Replace with actual URL
       };
 
       const responseHash = await dataTransactionService.processTransaction(transaction);

@@ -32,7 +32,7 @@ export default function JoinSalesChannelScreen({ navigation }) {
   const handleJoinChannel = async () => {
     if (channelId.trim()) {
       try {
-        const response = await axios.get(`http://localhost:9200/data-application/channels/${channelId}`);
+        const response = await axios.get(`https://rested-nice-dove.ngrok-free.app/9200/data-application/channels/${channelId}`);
         const channelData = response.data;
 
         if (channelData.sellers && channelData.sellers.includes(walletAddress)) {

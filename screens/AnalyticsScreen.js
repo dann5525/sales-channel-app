@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, Dimensions, Picker, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Dimensions, Picker, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 function AnalyticsScreen() {
+  // Existing state
   const [salesData, setSalesData] = useState({});
   const [inventoryData, setInventoryData] = useState({});
   const [loading, setLoading] = useState(true);
   const [sellers, setSellers] = useState([]);
   const [selectedSeller, setSelectedSeller] = useState('All');
+  const [currentPage, setCurrentPage] = useState(0);
+  const productsPerPage = 5;
+
+  // ... [Previous fetchSalesData function remains the same] ...
 
   const fetchSalesData = async () => {
     try {
@@ -23,7 +28,7 @@ function AnalyticsScreen() {
         throw new Error('No channelId found in sales channel data.');
       }
 
-      const response = await axios.get(`http://localhost:9200/data-application/channels/${channelId}`);
+      const response = await axios.get(`https://rested-nice-dove.ngrok-free.app/9200/data-application/channels/${channelId}`);
       const { sales, sellers, inventory } = response.data;
 
       const currentTime = Date.now();
@@ -52,7 +57,7 @@ function AnalyticsScreen() {
       });
 
       setSalesData(dataBySeller);
-      setInventoryData(inventory); // Store raw inventory data
+      setInventoryData(inventory);
       setSellers(sellers);
       setLoading(false);
     } catch (error) {
@@ -80,26 +85,54 @@ function AnalyticsScreen() {
     );
   }
 
-  // Aggregate inventory for "All" or use specific seller's inventory
-  const aggregatedInventory = {};
-  if (selectedSeller === 'All') {
-    Object.entries(inventoryData).forEach(([seller, sellerInventory]) => {
-      Object.entries(sellerInventory).forEach(([product, count]) => {
-        if (!aggregatedInventory[product]) {
-          aggregatedInventory[product] = 0;
-        }
-        aggregatedInventory[product] += count; // Sum the inventory for each product across all sellers
+  const aggregateInventory = () => {
+    const aggregatedInventory = {};
+    if (selectedSeller === 'All') {
+      Object.entries(inventoryData).forEach(([seller, sellerInventory]) => {
+        Object.entries(sellerInventory).forEach(([product, count]) => {
+          if (!aggregatedInventory[product]) {
+            aggregatedInventory[product] = 0;
+          }
+          aggregatedInventory[product] += count;
+        });
       });
-    });
-  } else {
-    // Only show the inventory for the selected seller
-    Object.entries(inventoryData[selectedSeller] || {}).forEach(([product, count]) => {
-      aggregatedInventory[product] = count;
-    });
-  }
+    } else {
+      Object.entries(inventoryData[selectedSeller] || {}).forEach(([product, count]) => {
+        aggregatedInventory[product] = count;
+      });
+    }
+    return aggregatedInventory;
+  };
 
-  const productLabels = Object.keys(aggregatedInventory);
-  const productInventoryCounts = Object.values(aggregatedInventory);
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 0));
+  };
+
+  // Bar click handler
+  const handleBarClick = (data) => {
+    if (data && data.index !== undefined) {
+      const product = productLabels[data.index];
+      const count = productInventoryCounts[data.index];
+      Alert.alert(
+        product,
+        `Current Inventory: ${count} items`,
+        [{ text: 'OK', onPress: () => console.log('OK Pressed') }],
+        { cancelable: true }
+      );
+    }
+  };
+
+  const aggregatedInventory = aggregateInventory();
+  const allProductLabels = Object.keys(aggregatedInventory);
+  const totalPages = Math.ceil(allProductLabels.length / productsPerPage);
+  
+  const startIndex = currentPage * productsPerPage;
+  const productLabels = allProductLabels.slice(startIndex, startIndex + productsPerPage);
+  const productInventoryCounts = productLabels.map(label => aggregatedInventory[label]);
 
   const filteredSalesData = selectedSeller === 'All'
     ? Object.values(salesData).reduce((acc, sales) => {
@@ -110,14 +143,13 @@ function AnalyticsScreen() {
   const salesDataset = [
     {
       data: filteredSalesData,
-      color: () => '#4CAF50', // Green color for sales data
+      color: () => '#4CAF50',
       strokeWidth: 2,
     },
   ];
 
-  // Find the minimum value in inventory to adjust the y-axis range
   const minInventory = Math.min(...productInventoryCounts);
-  const yAxisMin = minInventory < 0 ? minInventory : 0; // If there are negatives, show the min value
+  const yAxisMin = minInventory < 0 ? minInventory : 0;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -137,7 +169,6 @@ function AnalyticsScreen() {
         </Picker>
       </View>
 
-      {/* Sales Analytics Chart */}
       <View style={styles.chartContainer}>
         <LineChart
           data={{
@@ -157,6 +188,7 @@ function AnalyticsScreen() {
             labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
             style: { borderRadius: 16 },
             propsForDots: { r: '6', strokeWidth: '2', stroke: '#81C784' },
+            paddingLeft: 15,
           }}
           bezier
           style={{ marginVertical: 8, borderRadius: 16 }}
@@ -165,18 +197,37 @@ function AnalyticsScreen() {
 
       <Text style={styles.chartTitle}>Current Inventory</Text>
 
-      {/* Inventory Analytics Bar Chart */}
+      <View style={styles.paginationContainer}>
+        <TouchableOpacity 
+          style={[styles.paginationButton, currentPage === 0 && styles.paginationButtonDisabled]}
+          onPress={handlePrevPage}
+          disabled={currentPage === 0}
+        >
+          <Text style={styles.paginationButtonText}>Previous</Text>
+        </TouchableOpacity>
+        <Text style={styles.paginationText}>
+          Page {currentPage + 1} of {totalPages}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.paginationButton, currentPage === totalPages - 1 && styles.paginationButtonDisabled]}
+          onPress={handleNextPage}
+          disabled={currentPage === totalPages - 1}
+        >
+          <Text style={styles.paginationButtonText}>Next</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.chartContainer}>
         <BarChart
           data={{
-            labels: productLabels, // Labels will be the product names
-            datasets: [{ data: productInventoryCounts }], // Data will be the corresponding inventory counts
+            labels: productLabels,
+            datasets: [{ data: productInventoryCounts }],
           }}
           width={Dimensions.get('window').width - 40}
           height={220}
           yAxisLabel=""
           yAxisSuffix=" items"
-          yAxisMin={yAxisMin} // Start the y-axis at the minimum inventory value
+          yAxisMin={yAxisMin}
           chartConfig={{
             backgroundColor: '#f0f0f0',
             backgroundGradientFrom: '#FF9800',
@@ -185,15 +236,16 @@ function AnalyticsScreen() {
             color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
             labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
             style: { borderRadius: 16 },
+            paddingLeft: 15,
           }}
           style={{ marginVertical: 8, borderRadius: 16 }}
-          fromZero={yAxisMin >= 0} // Only use fromZero when yAxisMin is greater than or equal to 0
-          segments={5} // Controls the number of y-axis segments
+          fromZero={yAxisMin >= 0}
+          segments={5}
+          onDataPointClick={handleBarClick}
         />
       </View>
 
-
-      <TouchableOpacity style={styles.refreshButton} onPress={() => fetchSalesData()}>
+      <TouchableOpacity style={styles.refreshButton} onPress={fetchSalesData}>
         <Text style={styles.refreshButtonText}>Refresh Data</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -210,10 +262,11 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     marginBottom: 20,
+    width: '80%',
   },
   picker: {
     height: 50,
-    width: 200,
+    width: '100%',
     borderColor: '#4CAF50',
     borderWidth: 1,
     borderRadius: 10,
@@ -226,9 +279,10 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   chartContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    width: '100%',
     alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 15,
   },
   chartTitle: {
     fontSize: 20,
@@ -236,8 +290,35 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     color: '#333',
   },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  paginationButton: {
+    backgroundColor: '#4CAF50',
+    padding: 8,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  paginationButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  paginationButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  paginationText: {
+    fontSize: 16,
+    color: '#333',
+  },
   refreshButton: {
     marginTop: 20,
+    marginBottom: 30,
     backgroundColor: '#4CAF50',
     padding: 10,
     borderRadius: 10,

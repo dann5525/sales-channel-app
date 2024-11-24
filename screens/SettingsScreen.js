@@ -46,7 +46,7 @@ export default function SettingsScreen({ navigation }) {
 
   const fetchChannelData = async (channelId, address) => {
     try {
-      const response = await axios.get(`http://localhost:9200/data-application/channels/${channelId}`);
+      const response = await axios.get(`https://rested-nice-dove.ngrok-free.app/9200/data-application/channels/${channelId}`);
       const channelData = response.data;
       setChannelData(channelData);
 
@@ -113,8 +113,8 @@ export default function SettingsScreen({ navigation }) {
             ],
           },
         },
-        globalL0Url: 'http://localhost:9000',
-        metagraphL1DataUrl: 'http://localhost:9400',
+        globalL0Url: 'https://rested-nice-dove.ngrok-free.app/9000',
+        metagraphL1DataUrl: 'https://rested-nice-dove.ngrok-free.app/9400',
       };
 
       await dataTransactionService.processTransaction(transactionObject);
@@ -146,8 +146,8 @@ export default function SettingsScreen({ navigation }) {
             seller: sellerToAdd,
           }
         },
-        globalL0Url: 'http://localhost:9000',
-        metagraphL1DataUrl: 'http://localhost:9400',
+        globalL0Url: 'https://rested-nice-dove.ngrok-free.app/9000',
+        metagraphL1DataUrl: 'https://rested-nice-dove.ngrok-free.app/9400',
       };
 
       await dataTransactionService.processTransaction(transactionObject);

@@ -30,15 +30,16 @@ export default function MainScreen({ navigation }) {
           const address = account.address;
 
           // Fetch the latest on-chain data for this sales channel
-          const response = await axios.get(`http://localhost:9200/data-application/channels/${channelId}`);
+          const response = await axios.get(`https://rested-nice-dove.ngrok-free.app/9200/data-application/channels/${channelId}`);
           const latestChannelData = response.data;
 
           // Check if the address is part of the sales channel (either owner or seller)
           if (latestChannelData.owner === address || latestChannelData.sellers.includes(address)) {
-            const products = Object.entries(latestChannelData.products || {}).map(([name, price]) => ({
-              name,
-              price: parseFloat(price),
-            }));
+            const sortedProducts = Object.entries(latestChannelData.products || {}).sort((a, b) => a[1] - b[1]);
+            const products = sortedProducts.map(([name, price]) => ({
+                          name,
+                          price: parseFloat(price),
+                        }));
             
             console.log('Loaded products:', products); // Debug line
 
@@ -100,6 +101,7 @@ export default function MainScreen({ navigation }) {
         Sale: {
           channelId: channelId, // Use the stored channelId
           address: account.address,
+          station: "one",
           sale: products.map(product => [product.name, counts[product.name]]),
           payment: paymentMethod,
           timestamp: Date.now().toString(),
@@ -109,8 +111,8 @@ export default function MainScreen({ navigation }) {
       // Push the sale transaction to the service
       const transactionObject = {
         message: saleData,
-        globalL0Url: 'http://localhost:9000', // Replace with actual URL
-        metagraphL1DataUrl: 'http://localhost:9400', // Replace with actual URL
+        globalL0Url: 'https://rested-nice-dove.ngrok-free.app/9000', // Replace with actual URL
+        metagraphL1DataUrl: 'https://rested-nice-dove.ngrok-free.app/9400', // Replace with actual URL
       };
 
       await dataTransactionService.processTransaction(transactionObject);
